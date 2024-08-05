@@ -1,0 +1,13 @@
+gtfs_data/
+
+**/__pycache__/
+
+**/*.pyc
+
+frontend/node_modules/
+frontend/build/
+
+.DS_Store
+Thumbs.db
+
+*.log
