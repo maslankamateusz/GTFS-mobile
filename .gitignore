@@ -1,5 +1,9 @@
 gtfs_data/
 
+app/testttss.py
+app/gtfs-realtime.proto
+app/gtfs_realtime_pb2.py
+
 **/__pycache__/
 
 **/*.pyc

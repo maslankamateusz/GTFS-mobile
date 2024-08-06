@@ -1,6 +1,18 @@
+import requests
 from flask import Blueprint, jsonify, request, current_app
+from .gtfs_realtime_loader import get_vehicle_positions
 
 bp = Blueprint('main', __name__)
+
+def download_file(url, local_filename):
+    response = requests.get(url, stream=True)
+    if response.status_code == 200:
+        with open(local_filename, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+    else:
+        raise Exception(f"Nie udało się pobrać pliku. Status code: {response.status_code}")
 
 @bp.route('/api/routes')
 def get_routes():
@@ -8,11 +20,11 @@ def get_routes():
     routes = gtfs_data['routes'][['route_id', 'route_short_name']]
     routes_dict = routes.to_dict(orient='records')
     return jsonify(routes_dict)
- 
+
 @bp.route('/api/stops', methods=['GET'])
 def get_stops_for_route():
     route_number = request.args.get('route_number')
-    direction = request.args.get('direction')  
+    direction = request.args.get('direction')
 
     if route_number is None:
         return jsonify({"error": "route_number parameter is required"}), 400
@@ -20,7 +32,7 @@ def get_stops_for_route():
     if direction not in ['0', '1']:
         return jsonify({"error": "direction parameter must be 0 or 1"}), 400
 
-    gtfs_data = current_app.config['GTFS_DATA']  
+    gtfs_data = current_app.config['GTFS_DATA']
 
     route = gtfs_data['routes'][gtfs_data['routes']['route_short_name'] == str(route_number)]
     if route.empty:
@@ -39,9 +51,44 @@ def get_stops_for_route():
     stops_for_all_trips = stops_for_all_trips.reset_index().merge(gtfs_data['stops'], on='stop_id')
     stops = stops_for_all_trips[['stop_id', 'stop_name']].drop_duplicates().to_dict(orient='records')
 
-    print(f"Route number: {route_number}, Direction: {direction}")
-
     return jsonify(stops)
+
+@bp.route('/api/realtime', methods=['GET'])
+def get_realtime_data():
+    url = 'https://gtfs.ztp.krakow.pl/VehiclePositions_A.pb'
+    
+    try:
+        vehicle_positions = get_vehicle_positions(url)
+        print("Raw vehicle positions data:")
+        print(vehicle_positions)
+        
+        json_serializable_data = convert_vehicle_positions_for_json(vehicle_positions)
+        print("Converted data for JSON:")
+        print(json_serializable_data)
+        
+        return jsonify(json_serializable_data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def convert_value(value):
+    """Konwertuje wartość na typ JSON-serializowalny."""
+    if isinstance(value, (bytes, bytearray)):
+        return value.decode('utf-8')
+    elif isinstance(value, (list, tuple)):
+        return [convert_value(v) for v in value]
+    elif isinstance(value, dict):
+        return {k: convert_value(v) for k, v in value.items()}
+    elif hasattr(value, 'ListFields'):
+        # Obsłuż zagnieżdżone obiekty protobuf
+        return {field.name: convert_value(getattr(value, field.name)) for field in value.DESCRIPTOR.fields}
+    elif hasattr(value, 'extend'):
+        # Obsłuż powtarzające się obiekty protobuf (RepeatedCompositeContainer)
+        return [convert_value(v) for v in value]
+    return value
+
+def convert_vehicle_positions_for_json(vehicle_positions):
+    """Konwertuje pojazdy na format JSON-serializowalny."""
+    return [convert_value(vehicle) for vehicle in vehicle_positions]
 
 def configure_routes(app):
     app.register_blueprint(bp)
