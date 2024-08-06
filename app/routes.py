@@ -71,7 +71,6 @@ def get_realtime_data():
         return jsonify({"error": str(e)}), 500
 
 def convert_value(value):
-    """Konwertuje wartość na typ JSON-serializowalny."""
     if isinstance(value, (bytes, bytearray)):
         return value.decode('utf-8')
     elif isinstance(value, (list, tuple)):
@@ -79,15 +78,12 @@ def convert_value(value):
     elif isinstance(value, dict):
         return {k: convert_value(v) for k, v in value.items()}
     elif hasattr(value, 'ListFields'):
-        # Obsłuż zagnieżdżone obiekty protobuf
         return {field.name: convert_value(getattr(value, field.name)) for field in value.DESCRIPTOR.fields}
     elif hasattr(value, 'extend'):
-        # Obsłuż powtarzające się obiekty protobuf (RepeatedCompositeContainer)
         return [convert_value(v) for v in value]
     return value
 
 def convert_vehicle_positions_for_json(vehicle_positions):
-    """Konwertuje pojazdy na format JSON-serializowalny."""
     return [convert_value(vehicle) for vehicle in vehicle_positions]
 
 def configure_routes(app):
