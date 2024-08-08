@@ -1,7 +1,12 @@
 import requests
 import gtfs_realtime_pb2
+from flask import current_app
 
-def download_file(url, local_filename):
+url = 'https://gtfs.ztp.krakow.pl/VehiclePositions_A.pb'
+local_filename = 'vehicle_positions.pb'
+
+def download_gtfs_realtime_file():
+
     response = requests.get(url, stream=True)
     if response.status_code == 200:
         with open(local_filename, 'wb') as f:
@@ -11,8 +16,9 @@ def download_file(url, local_filename):
     else:
         raise Exception(f"Nie udało się pobrać pliku. Status code: {response.status_code}")
 
-def load_vehicle_positions(file_path):
-    with open(file_path, 'rb') as f:
+def load_gtfs_data():
+    download_gtfs_realtime_file()
+    with open(local_filename, 'rb') as f:
         data = f.read()
     
     feed = gtfs_realtime_pb2.FeedMessage()
@@ -20,16 +26,41 @@ def load_vehicle_positions(file_path):
     
     vehicles = []
     for entity in feed.entity:
-        if entity.HasField('vehicle'):
+        if entity:
             vehicle = entity.vehicle
             vehicle_info = {field.name: getattr(vehicle, field.name) for field in vehicle.DESCRIPTOR.fields}
             vehicles.append(vehicle_info)
     
     return vehicles
 
-def get_vehicle_positions(url):
-    local_filename = 'vehicle_positions.pb'
-    
-    download_file(url, local_filename)
-    
-    return load_vehicle_positions(local_filename)
+def get_vehicle_with_route_name():
+    download_gtfs_realtime_file()
+
+    gtfs_realtime_vehicles = load_gtfs_data()
+    gtfs_data = current_app.config['GTFS_DATA']
+
+    if 'route_id' not in gtfs_data['routes'].index.names:
+        gtfs_data['routes'].set_index('route_id', inplace=True)
+
+    vehicle_list = []
+    for cursor in gtfs_realtime_vehicles:
+        trip_id = cursor['trip'].trip_id
+        route_id = gtfs_data['trips'].loc[trip_id]['route_id']
+        route_short_name = gtfs_data['routes'].loc[route_id]['route_short_name']
+        trip_headsign = gtfs_data['trips'].loc[str(trip_id)]['trip_headsign']   
+        shape_id = gtfs_data['trips'].loc[str(trip_id)]['shape_id']
+
+        vehicle = {
+            'vehicle_id' : cursor['vehicle'].license_plate,
+            'route_short_name' : route_short_name,
+            'latitude' : cursor['position'].latitude,
+            'longitude' : cursor['position'].longitude,
+            'timestamp' : cursor['timestamp'],
+            'stop_id' : cursor['stop_id'],
+            'trip_id' : trip_id,
+            'route_id' : route_id,
+            'trip_headsign' : trip_headsign,
+            'shape_id' : shape_id
+        }
+        vehicle_list.append(vehicle)
+    return vehicle_list

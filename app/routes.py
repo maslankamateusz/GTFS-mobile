@@ -1,6 +1,6 @@
 import requests
 from flask import Blueprint, jsonify, request, current_app
-from .gtfs_realtime_loader import get_vehicle_positions
+from .gtfs_realtime_loader import load_gtfs_data, get_vehicle_with_route_name
 
 bp = Blueprint('main', __name__)
 
@@ -58,14 +58,21 @@ def get_realtime_data():
     url = 'https://gtfs.ztp.krakow.pl/VehiclePositions_A.pb'
     
     try:
-        vehicle_positions = get_vehicle_positions(url)
-        print("Raw vehicle positions data:")
-        print(vehicle_positions)
-        
+        vehicle_positions = load_gtfs_data()
         json_serializable_data = convert_vehicle_positions_for_json(vehicle_positions)
-        print("Converted data for JSON:")
-        print(json_serializable_data)
-        
+
+        return jsonify(json_serializable_data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@bp.route('/api/realtime/vehicles', methods=['GET'])
+def get_realtime_vehicles():
+    url = 'vehicle_positions.pb'
+    
+    try:
+        vehicle_list =  get_vehicle_with_route_name()
+        json_serializable_data = convert_vehicle_positions_for_json(vehicle_list)
+
         return jsonify(json_serializable_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
