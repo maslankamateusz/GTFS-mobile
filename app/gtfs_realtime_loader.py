@@ -49,7 +49,7 @@ def get_vehicle_with_route_name():
         route_short_name = gtfs_data['routes'].loc[route_id]['route_short_name']
         trip_headsign = gtfs_data['trips'].loc[str(trip_id)]['trip_headsign']   
         shape_id = gtfs_data['trips'].loc[str(trip_id)]['shape_id']
-
+        
         vehicle = {
             'vehicle_id' : cursor['vehicle'].license_plate,
             'route_short_name' : route_short_name,
@@ -60,7 +60,47 @@ def get_vehicle_with_route_name():
             'trip_id' : trip_id,
             'route_id' : route_id,
             'trip_headsign' : trip_headsign,
-            'shape_id' : shape_id
+            'shape_id' : shape_id,
+            'bearing' : cursor['position'].bearing
         }
         vehicle_list.append(vehicle)
     return vehicle_list
+
+def get_bus_schedule_data(route_id):
+    gtfs_data = current_app.config['GTFS_DATA']
+    filtered_data = gtfs_data['trips'][gtfs_data['trips']['route_id'] == route_id].copy()
+    if 'trip_id' in filtered_data.index.names:
+        filtered_data.reset_index(inplace=True)
+    
+    filtered_data['block_prefix'] = filtered_data['trip_id'].str.split('_').str[:2].str.join('_')
+    unique_blocks = filtered_data[['block_prefix']].drop_duplicates().reset_index(drop=True)
+        
+    block_prefixes = unique_blocks['block_prefix']
+
+    trips_data = gtfs_data['trips']
+    stop_times_data = gtfs_data['stop_times']
+    if 'trip_id' in stop_times_data.index.names:
+        stop_times_data.reset_index(inplace=True)
+
+    block_filtered_trips = trips_data[trips_data.index.str.startswith(block_prefixes.iloc[0] + '_t')]
+
+    route_bus_schedule_list = []
+    for block_prefix in block_prefixes:
+        
+        block_filtered_trips = trips_data[trips_data.index.str.startswith(block_prefix + '_t')]
+
+        first_trip_id = block_filtered_trips.iloc[0].name
+        filtred_start_time_data = stop_times_data[gtfs_data['stop_times']['trip_id'] == first_trip_id]
+        start_time = filtred_start_time_data.departure_time.values[0]
+        last_trip_id = block_filtered_trips.iloc[-1].name
+        filtred_end_time_data = stop_times_data[gtfs_data['stop_times']['trip_id'] == last_trip_id]
+        end_time = filtred_end_time_data.departure_time.values[-1]
+        bus_schedule_dict = {
+            'block_prefix' : block_prefix,
+            'start_time' : start_time,
+            'end_time' : end_time,
+            'route_schedule' : block_filtered_trips
+        }
+        route_bus_schedule_list.append(bus_schedule_dict)
+
+    return route_bus_schedule_list

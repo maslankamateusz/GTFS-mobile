@@ -1,6 +1,8 @@
 import requests
 from flask import Blueprint, jsonify, request, current_app
-from .gtfs_realtime_loader import load_gtfs_data, get_vehicle_with_route_name
+from .gtfs_realtime_loader import load_gtfs_data, get_vehicle_with_route_name, get_bus_schedule_data
+import pandas as pd
+
 
 bp = Blueprint('main', __name__)
 
@@ -66,9 +68,7 @@ def get_realtime_data():
         return jsonify({"error": str(e)}), 500
     
 @bp.route('/api/realtime/vehicles', methods=['GET'])
-def get_realtime_vehicles():
-    url = 'vehicle_positions.pb'
-    
+def get_realtime_vehicles():   
     try:
         vehicle_list =  get_vehicle_with_route_name()
         json_serializable_data = convert_vehicle_positions_for_json(vehicle_list)
@@ -76,6 +76,17 @@ def get_realtime_vehicles():
         return jsonify(json_serializable_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@bp.route('/api/realtime/vehicles/schedule', methods=['GET'])
+def get_bus_schedule():
+    route_id = request.args.get('route_id')
+    bus_schedule_data = get_bus_schedule_data(route_id)
+    if isinstance(bus_schedule_data, pd.DataFrame):
+        json_serializable_data = convert_vehicle_positions_for_json(bus_schedule_data)
+    else:
+        json_serializable_data = convert_vehicle_positions_for_json(bus_schedule_data)
+    return jsonify(json_serializable_data)
+
 
 def convert_value(value):
     if isinstance(value, (bytes, bytearray)):
@@ -88,10 +99,15 @@ def convert_value(value):
         return {field.name: convert_value(getattr(value, field.name)) for field in value.DESCRIPTOR.fields}
     elif hasattr(value, 'extend'):
         return [convert_value(v) for v in value]
+    elif isinstance(value, pd.DataFrame):
+        return value.to_dict(orient='records')  
     return value
 
 def convert_vehicle_positions_for_json(vehicle_positions):
+    if isinstance(vehicle_positions, pd.DataFrame):
+        return vehicle_positions.to_dict(orient='records')  
     return [convert_value(vehicle) for vehicle in vehicle_positions]
+
 
 def configure_routes(app):
     app.register_blueprint(bp)
