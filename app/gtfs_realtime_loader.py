@@ -4,6 +4,7 @@ from flask import current_app
 
 url = 'https://gtfs.ztp.krakow.pl/VehiclePositions_A.pb'
 local_filename = 'vehicle_positions.pb'
+days_of_week = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 
 def download_gtfs_realtime_file():
 
@@ -83,8 +84,15 @@ def get_bus_schedule_data(route_id):
         stop_times_data.reset_index(inplace=True)
 
     block_filtered_trips = trips_data[trips_data.index.str.startswith(block_prefixes.iloc[0] + '_t')]
+    service_data = gtfs_data['calendar']
+    service_id_2 = 'service_1'
+
+
+    # days_with_service = service_day[days_of_week].loc[:, service_day[days_of_week].iloc[0] == 1].columns.tolist()
+
 
     route_bus_schedule_list = []
+
     for block_prefix in block_prefixes:
         
         block_filtered_trips = trips_data[trips_data.index.str.startswith(block_prefix + '_t')]
@@ -95,11 +103,17 @@ def get_bus_schedule_data(route_id):
         last_trip_id = block_filtered_trips.iloc[-1].name
         filtred_end_time_data = stop_times_data[gtfs_data['stop_times']['trip_id'] == last_trip_id]
         end_time = filtred_end_time_data.departure_time.values[-1]
+
+        service_id = block_filtered_trips["service_id"].values[0]
+
+        service_day = gtfs_data['calendar'][gtfs_data['calendar']['service_id'] == service_id].copy()
+        days_with_service = service_day[days_of_week].loc[:, service_day[days_of_week].iloc[0] == 1].columns.tolist()
         bus_schedule_dict = {
             'block_prefix' : block_prefix,
             'start_time' : start_time,
             'end_time' : end_time,
-            'route_schedule' : block_filtered_trips
+            'route_schedule' : block_filtered_trips,
+            'service_days' : days_with_service
         }
         route_bus_schedule_list.append(bus_schedule_dict)
 

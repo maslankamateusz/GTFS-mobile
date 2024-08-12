@@ -77,7 +77,7 @@ def get_realtime_vehicles():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-@bp.route('/api/realtime/vehicles/schedule', methods=['GET'])
+@bp.route('/api/vehicles/schedule', methods=['GET'])
 def get_bus_schedule():
     route_id = request.args.get('route_id')
     bus_schedule_data = get_bus_schedule_data(route_id)
