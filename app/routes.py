@@ -1,6 +1,7 @@
 import requests
 from flask import Blueprint, jsonify, request, current_app
 from .gtfs_realtime_loader import load_gtfs_data, get_vehicle_with_route_name, get_bus_schedule_data
+from .mongo_connection import save_data_to_database
 import pandas as pd
 
 
@@ -86,7 +87,16 @@ def get_bus_schedule():
     else:
         json_serializable_data = convert_vehicle_positions_for_json(bus_schedule_data)
     return jsonify(json_serializable_data)
-
+@bp.route('/save-data', methods=['GET'])
+def save_data():
+    # route_id = request.args.get('route_id')
+    # bus_schedule_data = get_bus_schedule_data(route_id)
+    # if isinstance(bus_schedule_data, pd.DataFrame):
+    #     json_serializable_data = convert_vehicle_positions_for_json(bus_schedule_data)
+    # else:
+    #     json_serializable_data = convert_vehicle_positions_for_json(bus_schedule_data)
+    result = save_data_to_database()
+    return jsonify('result')
 
 def convert_value(value):
     if isinstance(value, (bytes, bytearray)):

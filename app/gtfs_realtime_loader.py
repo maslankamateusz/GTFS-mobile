@@ -7,7 +7,6 @@ local_filename = 'vehicle_positions.pb'
 days_of_week = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 
 def download_gtfs_realtime_file():
-
     response = requests.get(url, stream=True)
     if response.status_code == 200:
         with open(local_filename, 'wb') as f:
@@ -46,25 +45,27 @@ def get_vehicle_with_route_name():
     vehicle_list = []
     for cursor in gtfs_realtime_vehicles:
         trip_id = cursor['trip'].trip_id
-        route_id = gtfs_data['trips'].loc[trip_id]['route_id']
-        route_short_name = gtfs_data['routes'].loc[route_id]['route_short_name']
-        trip_headsign = gtfs_data['trips'].loc[str(trip_id)]['trip_headsign']   
-        shape_id = gtfs_data['trips'].loc[str(trip_id)]['shape_id']
-        
-        vehicle = {
-            'vehicle_id' : cursor['vehicle'].license_plate,
-            'route_short_name' : route_short_name,
-            'latitude' : cursor['position'].latitude,
-            'longitude' : cursor['position'].longitude,
-            'timestamp' : cursor['timestamp'],
-            'stop_id' : cursor['stop_id'],
-            'trip_id' : trip_id,
-            'route_id' : route_id,
-            'trip_headsign' : trip_headsign,
-            'shape_id' : shape_id,
-            'bearing' : cursor['position'].bearing
-        }
-        vehicle_list.append(vehicle)
+        if trip_id in gtfs_data['trips'].index:
+            route_id = gtfs_data['trips'].loc[trip_id]['route_id']
+            route_short_name = gtfs_data['routes'].loc[route_id]['route_short_name']
+            trip_headsign = gtfs_data['trips'].loc[str(trip_id)]['trip_headsign']   
+            shape_id = gtfs_data['trips'].loc[str(trip_id)]['shape_id']
+
+            vehicle = {
+                'vehicle_id' : cursor['vehicle'].license_plate,
+                'route_short_name' : route_short_name,
+                'latitude' : cursor['position'].latitude,
+                'longitude' : cursor['position'].longitude,
+                'timestamp' : cursor['timestamp'],
+                'stop_id' : cursor['stop_id'],
+                'trip_id' : trip_id,
+                'route_id' : route_id,
+                'trip_headsign' : trip_headsign,
+                'shape_id' : shape_id,
+                'bearing' : cursor['position'].bearing
+            }
+            vehicle_list.append(vehicle)
+    
     return vehicle_list
 
 def get_bus_schedule_data(route_id):
@@ -118,3 +119,22 @@ def get_bus_schedule_data(route_id):
         route_bus_schedule_list.append(bus_schedule_dict)
 
     return route_bus_schedule_list
+
+def get_route_name_from_trip_id(trip_id):
+    gtfs_data = current_app.config['GTFS_DATA']
+
+    trips_data = gtfs_data['trips']
+    routes_data = gtfs_data['routes']
+
+    trip_id_prefix = "_".join(trip_id.split("_")[:3])   
+    filtered_trips = trips_data[trips_data.index.str.startswith(trip_id_prefix)]
+    unique_filtred_route_id = set(filtered_trips['route_id'].values)
+
+    if 'route_id' in routes_data.index.names:
+        routes_data.reset_index(inplace=True)
+
+    route_name_list = []
+    for route_id in unique_filtred_route_id:
+        route_name = routes_data[routes_data['route_id'] == route_id]['route_short_name'].values.tolist()
+        route_name_list.extend(route_name)
+    return route_name_list
