@@ -1,7 +1,7 @@
 import requests
 from flask import Blueprint, jsonify, request, current_app
 from .gtfs_realtime_loader import load_gtfs_data, get_vehicle_with_route_name, get_bus_schedule_data
-from .mongo_connection import save_data_to_database, get_vehicle_history_data
+from .mongo_connection import save_data_to_database, get_vehicle_history_data, get_route_history_data
 import pandas as pd
 
 
@@ -96,10 +96,14 @@ def save_data():
 @bp.route('/api/vehicles/history', methods=['GET'])
 def get_vehicles_history_data():
     vehicle_id = request.args.get('vehicle_id')
-    print(vehicle_id)
     result = get_vehicle_history_data(vehicle_id)
     return result
 
+@bp.route('/api/route/history', methods=['GET'])
+def get_routes_history_data():
+    route_name = request.args.get('route_name')
+    result = get_route_history_data(route_name)
+    return result
 
 def convert_value(value):
     if isinstance(value, (bytes, bytearray)):

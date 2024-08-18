@@ -155,3 +155,18 @@ def get_vehicle_history_data(vehicle_id):
     vehicle_history_list = list(vehicle_history)
 
     return vehicle_history_list
+
+def get_route_history_data(route_name):
+    collection = connect_to_database()
+
+    query = {"vehicle_list.route_short_name": route_name}
+    projection = {
+        "_id": 0, 
+        "date": 1, 
+        "vehicle_list.$": 1  
+    }
+
+    vehicle_history = collection.find(query, projection)
+    vehicle_history_list = list(vehicle_history)
+
+    return vehicle_history_list
