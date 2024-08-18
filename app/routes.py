@@ -96,13 +96,20 @@ def save_data():
 @bp.route('/api/vehicles/history', methods=['GET'])
 def get_vehicles_history_data():
     vehicle_id = request.args.get('vehicle_id')
-    result = get_vehicle_history_data(vehicle_id)
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    result = get_vehicle_history_data(vehicle_id, start_date=start_date, end_date=end_date)
     return result
 
 @bp.route('/api/route/history', methods=['GET'])
 def get_routes_history_data():
     route_name = request.args.get('route_name')
-    result = get_route_history_data(route_name)
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    result = get_route_history_data(route_name, start_date=start_date, end_date=end_date)
+    
     return result
 
 def convert_value(value):

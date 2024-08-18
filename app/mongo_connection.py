@@ -141,10 +141,18 @@ def add_data_to_database():
 
     return f"Document inserted with ID: {result.inserted_id}"
 
-def get_vehicle_history_data(vehicle_id):
+def get_vehicle_history_data(vehicle_id, start_date=None, end_date=None):
     collection = connect_to_database()
 
     query = {"vehicle_list.vehicle_id": vehicle_id}
+    
+    if start_date and end_date:
+        query["date"] = {"$gte": start_date, "$lte": end_date}
+    elif start_date:
+        query["date"] = {"$gte": start_date}
+    elif end_date:
+        query["date"] = {"$lte": end_date}
+
     projection = {
         "_id": 0, 
         "date": 1, 
@@ -156,10 +164,19 @@ def get_vehicle_history_data(vehicle_id):
 
     return vehicle_history_list
 
-def get_route_history_data(route_name):
+
+def get_route_history_data(route_name, start_date=None, end_date=None):
     collection = connect_to_database()
 
     query = {"vehicle_list.route_short_name": route_name}
+    
+    if start_date and end_date:
+        query["date"] = {"$gte": start_date, "$lte": end_date}
+    elif start_date:
+        query["date"] = {"$gte": start_date}
+    elif end_date:
+        query["date"] = {"$lte": end_date}
+
     projection = {
         "_id": 0, 
         "date": 1, 
