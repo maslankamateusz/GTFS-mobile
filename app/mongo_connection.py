@@ -57,7 +57,7 @@ def check_data_from_database(db):
     if result:
         document_timestamp = result.get('timestamp', None)  
         if document_timestamp is not None:
-            if current_timestamp - document_timestamp > 10 :
+            if current_timestamp - document_timestamp > 10 * 60:
                 vehicle_list = result['vehicle_list'] 
                 update_data(vehicle_list)
             else:
@@ -141,3 +141,17 @@ def add_data_to_database():
 
     return f"Document inserted with ID: {result.inserted_id}"
 
+def get_vehicle_history_data(vehicle_id):
+    collection = connect_to_database()
+
+    query = {"vehicle_list.vehicle_id": vehicle_id}
+    projection = {
+        "_id": 0, 
+        "date": 1, 
+        "vehicle_list.$": 1  
+    }
+    
+    vehicle_history = collection.find(query, projection)
+    vehicle_history_list = list(vehicle_history)
+
+    return vehicle_history_list
