@@ -143,8 +143,7 @@ def add_data_to_database():
 
 def get_vehicle_history_data(vehicle_id, start_date=None, end_date=None):
     collection = connect_to_database()
-
-    query = {"vehicle_list.vehicle_id": vehicle_id}
+    query = {}
     
     if start_date and end_date:
         query["date"] = {"$gte": start_date, "$lte": end_date}
@@ -156,19 +155,31 @@ def get_vehicle_history_data(vehicle_id, start_date=None, end_date=None):
     projection = {
         "_id": 0, 
         "date": 1, 
-        "vehicle_list.$": 1  
+        "vehicle_list": 1  
     }
     
     vehicle_history = collection.find(query, projection)
     vehicle_history_list = list(vehicle_history)
 
-    return vehicle_history_list
+    filtered_history = []
+    for entry in vehicle_history_list:
+        filtered_vehicles = [
+            vehicle for vehicle in entry['vehicle_list'] 
+            if vehicle['vehicle_id'] == vehicle_id
+        ]
+        if filtered_vehicles:
+            filtered_history.append({
+                "date": entry["date"],
+                "vehicle_list": filtered_vehicles
+            })
+
+    return filtered_history
 
 
 def get_route_history_data(route_name, start_date=None, end_date=None):
     collection = connect_to_database()
 
-    query = {"vehicle_list.route_short_name": route_name}
+    query = {}
     
     if start_date and end_date:
         query["date"] = {"$gte": start_date, "$lte": end_date}
@@ -180,10 +191,19 @@ def get_route_history_data(route_name, start_date=None, end_date=None):
     projection = {
         "_id": 0, 
         "date": 1, 
-        "vehicle_list.$": 1  
+        "vehicle_list": 1  
     }
 
     vehicle_history = collection.find(query, projection)
     vehicle_history_list = list(vehicle_history)
 
-    return vehicle_history_list
+    filtered_history = []
+    for entry in vehicle_history_list:
+        filtered_vehicles = [vehicle for vehicle in entry['vehicle_list'] if route_name in vehicle['route_short_name']]
+        if filtered_vehicles:
+            filtered_history.append({
+                "date": entry["date"],
+                "vehicle_list": filtered_vehicles
+            })
+
+    return filtered_history

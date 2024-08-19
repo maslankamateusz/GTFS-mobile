@@ -110,7 +110,7 @@ def get_routes_history_data():
     
     result = get_route_history_data(route_name, start_date=start_date, end_date=end_date)
     
-    return result
+    return jsonify(result)
 
 def convert_value(value):
     if isinstance(value, (bytes, bytearray)):
