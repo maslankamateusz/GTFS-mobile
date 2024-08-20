@@ -3,6 +3,8 @@ from flask import Blueprint, jsonify, request, current_app
 from .gtfs_realtime_services import load_gtfs_data, get_vehicle_with_route_name
 from .gtfs_processing import get_schedule_data
 from .mongo_connection import save_data_to_database, get_vehicle_history_data, get_route_history_data
+import json
+from flask import Response
 import pandas as pd
 
 
@@ -23,7 +25,9 @@ def get_routes():
     gtfs_data = current_app.config['GTFS_DATA']
     routes = gtfs_data['routes'][['route_id', 'route_short_name']]
     routes_dict = routes.to_dict(orient='records')
-    return jsonify(routes_dict)
+    formatted_json = json.dumps(routes_dict, indent=4)
+
+    return Response(formatted_json, mimetype='application/json')
 
 @bp.route('/api/stops', methods=['GET'])
 def get_stops_for_route():
@@ -55,28 +59,34 @@ def get_stops_for_route():
     stops_for_all_trips = stops_for_all_trips.reset_index().merge(gtfs_data['stops'], on='stop_id')
     stops = stops_for_all_trips[['stop_id', 'stop_name']].drop_duplicates().to_dict(orient='records')
 
-    return jsonify(stops)
+    formatted_json = json.dumps(stops, indent=4)
+
+    return Response(formatted_json, mimetype='application/json')
+
 
 @bp.route('/api/realtime', methods=['GET'])
 def get_realtime_data():    
     try:
         vehicle_positions = load_gtfs_data()
         json_serializable_data = convert_vehicle_positions_for_json(vehicle_positions)
+        formatted_json = json.dumps(json_serializable_data, indent=4)
 
-        return jsonify(json_serializable_data)
+        return Response(formatted_json, mimetype='application/json')
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
 @bp.route('/api/realtime/vehicles', methods=['GET'])
 def get_realtime_vehicles():   
     try:
-        vehicle_list =  get_vehicle_with_route_name()
+        vehicle_list = get_vehicle_with_route_name()
         json_serializable_data = convert_vehicle_positions_for_json(vehicle_list)
+        formatted_json = json.dumps(json_serializable_data, indent=4)
 
-        return jsonify(json_serializable_data)
+        return Response(formatted_json, mimetype='application/json')
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
+
 @bp.route('/api/vehicles/schedule', methods=['GET'])
 def get_schedule():
     route_id = request.args.get('route_id')
@@ -92,13 +102,19 @@ def get_schedule():
     else:
         json_serializable_data = convert_vehicle_positions_for_json(schedule_data)
     
-    return jsonify(json_serializable_data)
+    formatted_json = json.dumps(json_serializable_data, indent=4)
+
+    return Response(formatted_json, mimetype='application/json')
 
 @bp.route('/save-data', methods=['GET'])
 def save_data():
-    save_data_to_database()
-    
-    return jsonify('Saving data to database')
+    try:
+        save_data_to_database()
+        response_data = {"message": "Saving data to database"}
+        formatted_json = json.dumps(response_data, indent=4)
+        return Response(formatted_json, mimetype='application/json')
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @bp.route('/api/vehicles/history', methods=['GET'])
 def get_vehicles_history_data():
@@ -106,8 +122,12 @@ def get_vehicles_history_data():
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
 
-    result = get_vehicle_history_data(vehicle_id, start_date=start_date, end_date=end_date)
-    return result
+    try:
+        result = get_vehicle_history_data(vehicle_id, start_date=start_date, end_date=end_date)
+        formatted_json = json.dumps(result, indent=4)
+        return Response(formatted_json, mimetype='application/json')
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @bp.route('/api/route/history', methods=['GET'])
 def get_routes_history_data():
@@ -115,9 +135,12 @@ def get_routes_history_data():
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     
-    result = get_route_history_data(route_name, start_date=start_date, end_date=end_date)
-    
-    return jsonify(result)
+    try:
+        result = get_route_history_data(route_name, start_date=start_date, end_date=end_date)
+        formatted_json = json.dumps(result, indent=4)
+        return Response(formatted_json, mimetype='application/json')
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 def convert_value(value):
     if isinstance(value, (bytes, bytearray)):
