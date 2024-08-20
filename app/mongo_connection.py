@@ -1,6 +1,7 @@
 from pymongo import MongoClient
 from datetime import datetime
-from .gtfs_realtime_loader import get_vehicle_with_route_name, get_route_name_from_trip_id
+from .gtfs_realtime_services import get_vehicle_with_route_name
+from .gtfs_processing import get_route_name_from_trip_id
 
 def get_mongo_client():
     connection_string = "mongodb+srv://mateuszmaslanka06:i2w30W6qmPOrY3z8@transport-gtfs.3tvjz.mongodb.net/?retryWrites=true&w=majority&appName=transport-gtfs"

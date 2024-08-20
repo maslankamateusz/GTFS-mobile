@@ -1,6 +1,7 @@
 import requests
 from flask import Blueprint, jsonify, request, current_app
-from .gtfs_realtime_loader import load_gtfs_data, get_vehicle_with_route_name, get_schedule_data
+from .gtfs_realtime_services import load_gtfs_data, get_vehicle_with_route_name
+from .gtfs_processing import get_schedule_data
 from .mongo_connection import save_data_to_database, get_vehicle_history_data, get_route_history_data
 import pandas as pd
 
