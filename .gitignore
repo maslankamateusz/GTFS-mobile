@@ -11,10 +11,30 @@ vehicle_positions_t.pb
 
 **/*.pyc
 
-frontend/node_modules/
-frontend/build/
-
 .DS_Store
 Thumbs.db
 
 *.log
+
+frontend/gtfs-frontend/logs
+frontend/gtfs-frontend/*.log
+frontend/gtfs-frontend/npm-debug.log*
+frontend/gtfs-frontend/yarn-debug.log*
+frontend/gtfs-frontend/yarn-error.log*
+frontend/gtfs-frontend/pnpm-debug.log*
+frontend/gtfs-frontend/lerna-debug.log*
+
+frontend/gtfs-frontend/node_modules
+frontend/gtfs-frontend/dist
+frontend/gtfs-frontend/dist-ssr
+frontend/gtfs-frontend/*.local
+
+frontend/gtfs-frontend/.vscode/*
+frontend/gtfs-frontend/!.vscode/extensions.json
+frontend/gtfs-frontend/.idea
+frontend/gtfs-frontend/.DS_Store
+frontend/gtfs-frontend/*.suo
+frontend/gtfs-frontend/*.ntvs*
+frontend/gtfs-frontend/*.njsproj
+frontend/gtfs-frontend/*.sln
+frontend/gtfs-frontend/*.sw?
