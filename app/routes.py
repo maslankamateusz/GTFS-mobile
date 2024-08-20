@@ -1,6 +1,8 @@
 import requests
 from flask import Blueprint, jsonify, request, current_app
-from .gtfs_realtime_loader import load_gtfs_data, get_vehicle_with_route_name, get_bus_schedule_data
+from .gtfs_realtime_services import load_gtfs_data, get_vehicle_with_route_name
+from .gtfs_processing import get_schedule_data
+from .mongo_connection import save_data_to_database, get_vehicle_history_data, get_route_history_data
 import pandas as pd
 
 
@@ -56,9 +58,7 @@ def get_stops_for_route():
     return jsonify(stops)
 
 @bp.route('/api/realtime', methods=['GET'])
-def get_realtime_data():
-    url = 'https://gtfs.ztp.krakow.pl/VehiclePositions_A.pb'
-    
+def get_realtime_data():    
     try:
         vehicle_positions = load_gtfs_data()
         json_serializable_data = convert_vehicle_positions_for_json(vehicle_positions)
@@ -78,15 +78,46 @@ def get_realtime_vehicles():
         return jsonify({"error": str(e)}), 500
     
 @bp.route('/api/vehicles/schedule', methods=['GET'])
-def get_bus_schedule():
+def get_schedule():
     route_id = request.args.get('route_id')
-    bus_schedule_data = get_bus_schedule_data(route_id)
-    if isinstance(bus_schedule_data, pd.DataFrame):
-        json_serializable_data = convert_vehicle_positions_for_json(bus_schedule_data)
+    vehicle_type = request.args.get('vehicle_type', 'bus')  
+
+    if vehicle_type not in ['bus', 'tram']:
+        return jsonify({'error': 'Invalid vehicle type. Must be "bus" or "tram".'}), 400
+
+    schedule_data = get_schedule_data(route_id, vehicle_type)
+
+    if isinstance(schedule_data, pd.DataFrame):
+        json_serializable_data = convert_vehicle_positions_for_json(schedule_data)
     else:
-        json_serializable_data = convert_vehicle_positions_for_json(bus_schedule_data)
+        json_serializable_data = convert_vehicle_positions_for_json(schedule_data)
+    
     return jsonify(json_serializable_data)
 
+@bp.route('/save-data', methods=['GET'])
+def save_data():
+    save_data_to_database()
+    
+    return jsonify('Saving data to database')
+
+@bp.route('/api/vehicles/history', methods=['GET'])
+def get_vehicles_history_data():
+    vehicle_id = request.args.get('vehicle_id')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    result = get_vehicle_history_data(vehicle_id, start_date=start_date, end_date=end_date)
+    return result
+
+@bp.route('/api/route/history', methods=['GET'])
+def get_routes_history_data():
+    route_name = request.args.get('route_name')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    result = get_route_history_data(route_name, start_date=start_date, end_date=end_date)
+    
+    return jsonify(result)
 
 def convert_value(value):
     if isinstance(value, (bytes, bytearray)):

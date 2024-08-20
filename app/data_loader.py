@@ -2,19 +2,38 @@ import pandas as pd
 import os
 
 def load_gtfs_data(extracted_path):
-    stops_df = pd.read_csv(os.path.join(extracted_path, 'stops.txt'))
-    routes_df = pd.read_csv(os.path.join(extracted_path, 'routes.txt'))
-    trips_df = pd.read_csv(os.path.join(extracted_path, 'trips.txt'))
-    stop_times_df = pd.read_csv(os.path.join(extracted_path, 'stop_times.txt'))
-    calendar_df = pd.read_csv(os.path.join(extracted_path, 'calendar.txt'))
+    bus_path = os.path.join(extracted_path, 'bus')
+    tram_path = os.path.join(extracted_path, 'tram')
 
-    routes_df['route_short_name'] = routes_df['route_short_name'].astype(str)
-    trips_df.set_index('trip_id', inplace=True)
-    stop_times_df.set_index('trip_id', inplace=True)
+    stops_df_a = pd.read_csv(os.path.join(bus_path, 'stops.txt'))
+    routes_df_a = pd.read_csv(os.path.join(bus_path, 'routes.txt'))
+    trips_df_a = pd.read_csv(os.path.join(bus_path, 'trips.txt'))
+    stop_times_df_a = pd.read_csv(os.path.join(bus_path, 'stop_times.txt'))
+    calendar_df_a = pd.read_csv(os.path.join(bus_path, 'calendar.txt'))
+
+    stops_df_t = pd.read_csv(os.path.join(tram_path, 'stops.txt'))
+    routes_df_t = pd.read_csv(os.path.join(tram_path, 'routes.txt'))
+    trips_df_t = pd.read_csv(os.path.join(tram_path, 'trips.txt'))
+    stop_times_df_t = pd.read_csv(os.path.join(tram_path, 'stop_times.txt'))
+    calendar_df_t = pd.read_csv(os.path.join(tram_path, 'calendar.txt'))
+
+    routes_df_a['route_short_name'] = routes_df_a['route_short_name'].astype(str)
+    trips_df_a.set_index('trip_id', inplace=True)
+    stop_times_df_a.set_index('trip_id', inplace=True)
+
+    routes_df_t['route_short_name'] = routes_df_t['route_short_name'].astype(str)
+    trips_df_t.set_index('trip_id', inplace=True)
+    stop_times_df_t.set_index('trip_id', inplace=True)
+
     return {
-        'stops': stops_df,
-        'routes': routes_df,
-        'trips': trips_df,
-        'stop_times': stop_times_df,
-        'calendar' : calendar_df
+        'stops_a': stops_df_a,
+        'routes_a': routes_df_a,
+        'trips_a': trips_df_a,
+        'stop_times_a': stop_times_df_a,
+        'calendar_a': calendar_df_a,
+        'stops_t': stops_df_t,
+        'routes_t': routes_df_t,
+        'trips_t': trips_df_t,
+        'stop_times_t': stop_times_df_t,
+        'calendar_t': calendar_df_t
     }
