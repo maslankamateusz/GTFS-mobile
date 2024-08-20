@@ -31,7 +31,7 @@ def get_current_vehicle_list():
         trip_id = full_trip_id.split('_')[1]
         vehicle_dict = {
             'vehicle_id' : vehicle['vehicle_id'],
-            'route_short_name' : get_route_name_from_trip_id(vehicle['trip_id']),
+            'route_short_name' : get_route_name_from_trip_id(vehicle['trip_id'], vehicle['vehicle_id']),
             'trip_id' : trip_id
         }
         vehicles_list.append(vehicle_dict)
