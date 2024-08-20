@@ -4,7 +4,8 @@ app/testttss.py
 app/gtfs-realtime.proto
 app/gtfs_realtime_pb2.py
 
-vehicle_positions.pb
+vehicle_positions_a.pb
+vehicle_positions_t.pb
 
 **/__pycache__/
 

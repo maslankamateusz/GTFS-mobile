@@ -57,9 +57,7 @@ def get_stops_for_route():
     return jsonify(stops)
 
 @bp.route('/api/realtime', methods=['GET'])
-def get_realtime_data():
-    url = 'https://gtfs.ztp.krakow.pl/VehiclePositions_A.pb'
-    
+def get_realtime_data():    
     try:
         vehicle_positions = load_gtfs_data()
         json_serializable_data = convert_vehicle_positions_for_json(vehicle_positions)
