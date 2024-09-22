@@ -1,7 +1,47 @@
 from flask import current_app
+import pandas as pd
 days_of_week = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 
+def get_routes_list():
+    gtfs_data = current_app.config['GTFS_DATA']
+    routes_a = gtfs_data['routes_a'][['route_id', 'route_short_name']]
+    routes_t = gtfs_data['routes_t'][['route_id', 'route_short_name']]
+    routes_list = pd.concat([routes_a, routes_t], ignore_index=True)
 
+    return routes_list
+
+def get_stops_list(route_number, direction):
+    gtfs_data = current_app.config['GTFS_DATA']
+
+    routes_list = get_routes_list()
+    route_id = routes_list['route_id'][routes_list['route_short_name'] == str(route_number)].values[0]
+
+    if len(route_number) == 3:
+        trips = gtfs_data['trips_a']
+        stop_times = gtfs_data['stop_times_a']
+        stops = gtfs_data['stops_a']
+    else:
+        trips = gtfs_data['trips_t']
+        stop_times = gtfs_data['stop_times_t']
+        stops = gtfs_data['stops_t']
+
+    trips_for_route = trips[trips['route_id'] == route_id]
+    if len(route_number) < 3:
+        trips_for_route = trips_for_route.groupby('block_id').apply(lambda x: x.iloc[1:-1])
+    
+    filtered_trips = trips_for_route[trips_for_route['direction_id'] == int(direction)]
+    
+    if len(route_number) == 3:
+        trip_ids = filtered_trips.index.unique()
+    else:
+        trip_ids = filtered_trips.index.get_level_values(1).unique()
+
+    stops_for_all_trips = stop_times.loc[trip_ids].reset_index().merge(stops, on='stop_id')
+    stops = stops_for_all_trips[['stop_id', 'stop_name']].drop_duplicates().to_dict(orient='records')
+
+    return stops
+
+    
 
 def get_schedule_data(route_id, vehicle_type='bus'):
     gtfs_data = current_app.config['GTFS_DATA']
