@@ -1,7 +1,7 @@
 import requests
 from flask import Blueprint, jsonify, request, current_app
 from .gtfs_realtime_services import load_gtfs_data, get_vehicle_with_route_name
-from .gtfs_processing import get_schedule_data
+from .gtfs_processing import get_schedule_data, get_routes_list, get_stops_list
 from .mongo_connection import save_data_to_database, get_vehicle_history_data, get_route_history_data
 import json
 from flask import Response
@@ -22,10 +22,9 @@ def download_file(url, local_filename):
 
 @bp.route('/api/routes')
 def get_routes():
-    gtfs_data = current_app.config['GTFS_DATA']
-    routes = gtfs_data['routes'][['route_id', 'route_short_name']]
-    routes_dict = routes.to_dict(orient='records')
-    formatted_json = json.dumps(routes_dict, indent=4)
+    routes_list = get_routes_list()
+    routes_dict = routes_list.to_dict(orient='records')
+    formatted_json = json.dumps(routes_dict, indent=4)    
 
     return Response(formatted_json, mimetype='application/json')
 
@@ -39,27 +38,9 @@ def get_stops_for_route():
 
     if direction not in ['0', '1']:
         return jsonify({"error": "direction parameter must be 0 or 1"}), 400
-
-    gtfs_data = current_app.config['GTFS_DATA']
-
-    route = gtfs_data['routes'][gtfs_data['routes']['route_short_name'] == str(route_number)]
-    if route.empty:
-        return jsonify({"error": "No route found for the given route_number"}), 404
-
-    route_id = route.iloc[0]['route_id']
-
-    trips_for_route = gtfs_data['trips'][gtfs_data['trips']['route_id'] == route_id]
-    if trips_for_route.empty:
-        return jsonify({"error": "No trips found for the given route_id"}), 404
-
-    filtered_trips = trips_for_route[trips_for_route['direction_id'] == int(direction)]
-    trip_ids = filtered_trips.index.unique()
-
-    stops_for_all_trips = gtfs_data['stop_times'].loc[trip_ids]
-    stops_for_all_trips = stops_for_all_trips.reset_index().merge(gtfs_data['stops'], on='stop_id')
-    stops = stops_for_all_trips[['stop_id', 'stop_name']].drop_duplicates().to_dict(orient='records')
-
-    formatted_json = json.dumps(stops, indent=4)
+    
+    stops_list = get_stops_list(route_number, direction)
+    formatted_json = json.dumps(stops_list, indent=4)
 
     return Response(formatted_json, mimetype='application/json')
 
