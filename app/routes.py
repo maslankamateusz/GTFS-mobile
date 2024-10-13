@@ -1,7 +1,7 @@
 import requests
 from flask import Blueprint, jsonify, request, current_app
 from .gtfs_realtime_services import load_gtfs_data, get_vehicle_with_route_name
-from .gtfs_processing import get_schedule_data, get_routes_list, get_stops_list
+from .gtfs_processing import get_schedule_data, get_routes_list, get_stops_list, get_schedule_number_from_trip_id
 from .mongo_connection import save_data_to_database, get_vehicle_history_data, get_route_history_data
 import json
 from flask import Response
@@ -123,6 +123,15 @@ def get_routes_history_data():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@bp.route('/api/vehicles/schedule/number', methods=['GET'])
+def get_schedule_number():
+    trip_id = request.args.get('trip_id')
+    try:
+        schedule_number = get_schedule_number_from_trip_id(trip_id)        
+        formatted_json = json.dumps(schedule_number, indent=4)
+        return Response(formatted_json, mimetype='application/json')
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 def convert_value(value):
     if isinstance(value, (bytes, bytearray)):
         return value.decode('utf-8')

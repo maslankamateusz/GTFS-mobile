@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 from datetime import datetime
 from .gtfs_realtime_services import get_vehicle_with_route_name
-from .gtfs_processing import get_route_name_from_trip_id
+from .gtfs_processing import get_route_name_from_trip_id, get_schedule_number_from_trip_id_arr
 
 def get_mongo_client():
     connection_string = "mongodb+srv://mateuszmaslanka06:i2w30W6qmPOrY3z8@transport-gtfs.3tvjz.mongodb.net/?retryWrites=true&w=majority&appName=transport-gtfs"
@@ -28,14 +28,17 @@ def get_current_vehicle_list():
     vehicles_list = []
     for vehicle in vehicles_data:
         full_trip_id = vehicle['trip_id']
-        trip_id = full_trip_id.split('_')[1]
+
         vehicle_dict = {
             'vehicle_id' : vehicle['vehicle_id'],
             'route_short_name' : get_route_name_from_trip_id(vehicle['trip_id'], vehicle['vehicle_id']),
-            'trip_id' : trip_id
+            'trip_id' : full_trip_id,
         }
         vehicles_list.append(vehicle_dict)
-    return vehicles_list
+
+    filled_vehicle_list = get_schedule_number_from_trip_id_arr(vehicles_list)
+
+    return filled_vehicle_list
 
 
 def save_data_to_database():
@@ -85,15 +88,10 @@ def update_data(vehicle_list):
             if matching_vehicle:
                 if current_vehicle['route_short_name'][0] not in matching_vehicle['route_short_name']:
                     matching_vehicle['route_short_name'].extend(current_vehicle['route_short_name'])
-                
-                if not isinstance(matching_vehicle['trip_id'], list):
-                    matching_vehicle['trip_id'] = [matching_vehicle['trip_id']]
 
-                if current_vehicle['trip_id'] not in matching_vehicle['trip_id']:
-                    matching_vehicle['trip_id'].append(current_vehicle['trip_id'])
             else:
                 vehicle_list.append(current_vehicle)
-
+       
         add_update_data_to_database(vehicle_list)
 
 

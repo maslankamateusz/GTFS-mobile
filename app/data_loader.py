@@ -18,7 +18,6 @@ def load_gtfs_data(extracted_path):
     calendar_df_t = pd.read_csv(os.path.join(tram_path, 'calendar.txt'))
 
     routes_df_a['route_short_name'] = routes_df_a['route_short_name'].astype(str)
-    trips_df_a.set_index('trip_id', inplace=True)
     stop_times_df_a.set_index('trip_id', inplace=True)
 
     routes_df_t['route_short_name'] = routes_df_t['route_short_name'].astype(str)

@@ -70,8 +70,11 @@ def get_vehicle_with_route_name():
     if 'route_id' not in gtfs_data['routes_t'].index.names:
         gtfs_data['routes_t'].set_index('route_id', inplace=True)
 
-    vehicle_list = []
+    if 'trips_a' not in gtfs_data['trips_a'].index.names:
+        gtfs_data['trips_a'].set_index('trip_id', inplace=True)
 
+    vehicle_list = []
+    
     for cursor_a in vehicles_a:
         trip_id_a = cursor_a['trip'].trip_id
         if trip_id_a in gtfs_data['trips_a'].index:
@@ -91,10 +94,12 @@ def get_vehicle_with_route_name():
                 'route_id': route_id_a,
                 'trip_headsign': trip_headsign_a,
                 'shape_id': shape_id_a,
-                'bearing': cursor_a['position'].bearing
+                'bearing': cursor_a['position'].bearing,
+                'type': 'bus'
             }
             vehicle_list.append(vehicle_a)
     
+
     for cursor_t in vehicles_t:
         trip_id_t = cursor_t['trip'].trip_id
         if trip_id_t in gtfs_data['trips_t'].index:
