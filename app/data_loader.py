@@ -16,23 +16,37 @@ def load_gtfs_data(extracted_path):
     trips_df_t = pd.read_csv(os.path.join(tram_path, 'trips.txt'))
     stop_times_df_t = pd.read_csv(os.path.join(tram_path, 'stop_times.txt'))
     calendar_df_t = pd.read_csv(os.path.join(tram_path, 'calendar.txt'))
+    try:
+        if 'trip_id' in trips_df_a.columns:
+            trips_df_a.set_index('trip_id', inplace=True)
+        else:
+            raise KeyError("Column 'trip_id' does not exist in trips_df_a")
+        
+        stop_times_df_a.set_index('trip_id', inplace=True)
+
+        if 'trip_id' in trips_df_t.columns:
+            trips_df_t.set_index('trip_id', inplace=True)
+        else:
+            raise KeyError("Column 'trip_id' does not exist in trips_df_t")
+        
+        stop_times_df_t.set_index('trip_id', inplace=True)
+
+    except KeyError as e:
+        print(f"Key error: {e}")
+        raise
 
     routes_df_a['route_short_name'] = routes_df_a['route_short_name'].astype(str)
-    stop_times_df_a.set_index('trip_id', inplace=True)
-
     routes_df_t['route_short_name'] = routes_df_t['route_short_name'].astype(str)
-    trips_df_t.set_index('trip_id', inplace=True)
-    stop_times_df_t.set_index('trip_id', inplace=True)
 
     return {
         'stops_a': stops_df_a,
         'routes_a': routes_df_a,
-        'trips_a': trips_df_a,
+        'trips_a': trips_df_a,  
         'stop_times_a': stop_times_df_a,
         'calendar_a': calendar_df_a,
         'stops_t': stops_df_t,
         'routes_t': routes_df_t,
-        'trips_t': trips_df_t,
+        'trips_t': trips_df_t,  
         'stop_times_t': stop_times_df_t,
         'calendar_t': calendar_df_t
     }

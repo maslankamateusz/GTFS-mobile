@@ -30,9 +30,9 @@ def get_current_vehicle_list():
         full_trip_id = vehicle['trip_id']
 
         vehicle_dict = {
-            'vehicle_id' : vehicle['vehicle_id'],
-            'route_short_name' : get_route_name_from_trip_id(vehicle['trip_id'], vehicle['vehicle_id']),
-            'trip_id' : full_trip_id,
+            'vehicle_id': vehicle['vehicle_id'],
+            'route_short_name': get_route_name_from_trip_id(vehicle['trip_id'], vehicle['vehicle_id']),
+            'trip_id': full_trip_id,
         }
         vehicles_list.append(vehicle_dict)
 
@@ -40,9 +40,7 @@ def get_current_vehicle_list():
 
     return filled_vehicle_list
 
-
 def save_data_to_database():
-
     client = get_mongo_client()
     db = get_database(client, "mpk-gtfs")
     check_data_from_database(db)
@@ -65,15 +63,14 @@ def check_data_from_database(db):
                 vehicle_list = result['vehicle_list'] 
                 update_data(vehicle_list)
             else:
-                print("Timestamp jest młodszy niż 10 minut")
+                print("Last record was saved within 10 minutes")
         else:
-            print("Brak znacznika czasu w dokumentu")
+            print("No timestamp found in the document")
     else:
         add_data_to_database()
-        print("Brak dokumentu z datą:", current_date)
+        print("No document found for date:", current_date)
 
 def update_data(vehicle_list):
-
     current_vehicle_list = get_current_vehicle_list()
 
     current_vehicle_list_sorted = sorted(current_vehicle_list, key=lambda x: x['vehicle_id'])
@@ -88,13 +85,9 @@ def update_data(vehicle_list):
             if matching_vehicle:
                 if current_vehicle['route_short_name'][0] not in matching_vehicle['route_short_name']:
                     matching_vehicle['route_short_name'].extend(current_vehicle['route_short_name'])
-
             else:
                 vehicle_list.append(current_vehicle)
-       
         add_update_data_to_database(vehicle_list)
-
-
 
 def add_update_data_to_database(vehicle_list):
     current_datetime = datetime.now()
@@ -120,8 +113,7 @@ def add_update_data_to_database(vehicle_list):
             }}
         )
     else:
-       add_data_to_database()
-
+        add_data_to_database()
 
 def add_data_to_database():
     current_datetime = datetime.now()
@@ -131,7 +123,7 @@ def add_data_to_database():
         'date': current_datetime.strftime('%Y-%m-%d'),
         'time': current_datetime.strftime('%H:%M:%S'),
         'timestamp': current_datetime.timestamp(),
-        'vehicle_list' : vehicles_list
+        'vehicle_list': vehicles_list
     }
 
     collection = connect_to_database()
@@ -173,7 +165,6 @@ def get_vehicle_history_data(vehicle_id, start_date=None, end_date=None):
             })
 
     return filtered_history
-
 
 def get_route_history_data(route_name, start_date=None, end_date=None):
     collection = connect_to_database()
