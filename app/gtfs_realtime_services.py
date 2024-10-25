@@ -15,7 +15,7 @@ def download_gtfs_realtime_file():
                 if chunk:
                     f.write(chunk)
     else:
-        raise Exception(f"Nie udało się pobrać pliku. Status code: {response_a.status_code}")
+        raise Exception(f"Failed to download file. Status code: {response_a.status_code}")
     
     response_t = requests.get(url_t, stream=True)
     if response_t.status_code == 200:
@@ -24,7 +24,7 @@ def download_gtfs_realtime_file():
                 if chunk:
                     f.write(chunk)
     else:
-        raise Exception(f"Nie udało się pobrać pliku. Status code: {response_t.status_code}")
+        raise Exception(f"Failed to download file. Status code: {response_t.status_code}")
 
 def load_gtfs_data():
     download_gtfs_realtime_file()
@@ -37,7 +37,7 @@ def load_gtfs_data():
     feed_a.ParseFromString(data_a)
     
     for entity_a in feed_a.entity:
-        if entity_a:
+        if entity_a.HasField('vehicle'):
             vehicle_a = entity_a.vehicle
             vehicle_info_a = {field.name: getattr(vehicle_a, field.name) for field in vehicle_a.DESCRIPTOR.fields}
             vehicles_a.append(vehicle_info_a)
@@ -60,7 +60,6 @@ def load_gtfs_data():
 
 def get_vehicle_with_route_name():
     download_gtfs_realtime_file()
-
     vehicles_a, vehicles_t = load_gtfs_data()
     gtfs_data = current_app.config['GTFS_DATA']
 
@@ -70,8 +69,14 @@ def get_vehicle_with_route_name():
     if 'route_id' not in gtfs_data['routes_t'].index.names:
         gtfs_data['routes_t'].set_index('route_id', inplace=True)
 
-    vehicle_list = []
+    if 'trip_id' not in gtfs_data['trips_a'].index.names:
+        gtfs_data['trips_a'].set_index('trip_id', inplace=True)
 
+    if 'trip_id' not in gtfs_data['trips_t'].index.names:
+        gtfs_data['trips_t'].set_index('trip_id', inplace=True)
+
+    vehicle_list = []
+    
     for cursor_a in vehicles_a:
         trip_id_a = cursor_a['trip'].trip_id
         if trip_id_a in gtfs_data['trips_a'].index:
@@ -91,10 +96,11 @@ def get_vehicle_with_route_name():
                 'route_id': route_id_a,
                 'trip_headsign': trip_headsign_a,
                 'shape_id': shape_id_a,
-                'bearing': cursor_a['position'].bearing
+                'bearing': cursor_a['position'].bearing,
+                'type': 'bus'
             }
             vehicle_list.append(vehicle_a)
-    
+
     for cursor_t in vehicles_t:
         trip_id_t = cursor_t['trip'].trip_id
         if trip_id_t in gtfs_data['trips_t'].index:
@@ -118,7 +124,4 @@ def get_vehicle_with_route_name():
                 'type': 'tram'
             }
             vehicle_list.append(vehicle_t)
-
     return vehicle_list
-
-
